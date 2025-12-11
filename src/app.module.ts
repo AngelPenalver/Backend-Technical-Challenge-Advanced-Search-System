@@ -2,6 +2,8 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ElasticsearchModule } from '@nestjs/elasticsearch';
+import { ProductsModule } from './products/products.module';
+import { ProductEntity } from './products/infrastructure/persistence/entities/product.entity';
 
 @Global()
 @Module({
@@ -13,12 +15,11 @@ import { ElasticsearchModule } from '@nestjs/elasticsearch';
     username: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
     database: process.env.POSTGRES_DB,
-    entities: [],
+    entities: [ProductEntity],
     synchronize: true,
   }),
-  ElasticsearchModule.register({
-    node: process.env.ELASTICSEARCH_NODE,
-  }),
+
+    ProductsModule,
   ],
 })
 export class AppModule { }

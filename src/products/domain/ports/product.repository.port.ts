@@ -1,5 +1,6 @@
 import { Product } from "../models/product.model";
 
-export interface ProductRepositoryPort {
-    save(product: Product): Promise<Product>;
+export abstract class ProductRepositoryPort {
+    abstract save(product: Product): Promise<Product>;
+    abstract findByName(name: string): Promise<Product | null>;
 }
