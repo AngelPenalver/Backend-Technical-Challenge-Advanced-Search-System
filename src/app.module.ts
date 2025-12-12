@@ -1,7 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ElasticsearchModule } from '@nestjs/elasticsearch';
 import { ProductsModule } from './products/products.module';
 import { ProductEntity } from './products/infrastructure/persistence/entities/product.entity';
 
@@ -18,7 +17,6 @@ import { ProductEntity } from './products/infrastructure/persistence/entities/pr
     entities: [ProductEntity],
     synchronize: true,
   }),
-
     ProductsModule,
   ],
 })

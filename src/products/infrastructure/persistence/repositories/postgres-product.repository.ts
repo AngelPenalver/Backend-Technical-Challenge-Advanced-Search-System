@@ -1,14 +1,16 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Product } from "src/products/domain/models/product.model";
-import { ProductRepositoryPort } from "src/products/domain/ports/product.repository.port";
-import { ProductEntity } from "../entities/product.entity";
 import { Repository } from "typeorm";
+import { Product } from "../../../domain/models/product.model";
+import { ProductRepositoryPort } from "../../../domain/ports/product.repository.port";
+import { ProductEntity } from "../entities/product.entity";
 import { ProductMapper } from "../entities/product.mapper";
+
 
 @Injectable()
 export class PostgresProductRepository implements ProductRepositoryPort {
-    private readonly logger = new Logger(PostgresProductRepository.name)
+    private readonly logger = new Logger(PostgresProductRepository.name);
+
     constructor(@InjectRepository(ProductEntity) private readonly productRepository: Repository<ProductEntity>) { }
 
     async save(product: Product): Promise<Product> {
@@ -34,5 +36,10 @@ export class PostgresProductRepository implements ProductRepositoryPort {
         }
 
         return ProductMapper.toDomain(entity)
+    }
+
+    async findAll(): Promise<Product[]> {
+        const entities = await this.productRepository.find()
+        return entities.map(entity => ProductMapper.toDomain(entity))
     }
 }
