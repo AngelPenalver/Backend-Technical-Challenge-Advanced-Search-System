@@ -8,6 +8,8 @@ import { ProductEntity } from "./infrastructure/persistence/entities/product.ent
 import { ProductRepositoryPort } from "./domain/ports/product.repository.port";
 import { SearchServicePort } from "./domain/ports/search-service.port";
 import { ElasticProductAdapter } from "./infrastructure/search/elastic-product.adapter";
+import { ProductSeederService } from "./infrastructure/seeder/product.seeder.service";
+import { SearchProductsUseCase } from "./application/use-cases/search-products.use-case";
 
 @Module({
     imports: [
@@ -26,7 +28,9 @@ import { ElasticProductAdapter } from "./infrastructure/search/elastic-product.a
         {
             provide: SearchServicePort,
             useClass: ElasticProductAdapter
-        }
+        },
+        ProductSeederService,
+        SearchProductsUseCase
     ],
     exports: [],
 })
