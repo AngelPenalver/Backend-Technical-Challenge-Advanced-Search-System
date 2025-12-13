@@ -96,7 +96,11 @@ export class ElasticProductAdapter implements SearchServicePort, OnModuleInit {
                 }
             });
 
-            this.logger.log(`Products searched by: ${JSON.stringify(query)}`);
+            // Check if any filter parameters are provided (excluding pagination/sorting)
+            const hasFilters = !!(query.q || query.category || query.minPrice !== undefined ||
+                query.maxPrice !== undefined || query.location || query.subcategory);
+
+            this.logger.log(`Products searched by: ${hasFilters ? JSON.stringify(query) : 'All products'}`);
 
             return response.hits.hits.map(hit => hit._source as Product);
 
