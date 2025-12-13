@@ -25,5 +25,9 @@ export interface ElasticsearchRangeQuery {
     };
 }
 
+export interface AutocompleteResult {
+    name: string
+}
+
 export type ElasticsearchMustQuery = ElasticsearchMultiMatchQuery | ElasticsearchMatchAllQuery;
 export type ElasticsearchFilterQuery = ElasticsearchTermQuery | ElasticsearchRangeQuery;

@@ -163,6 +163,20 @@ pnpm run start:dev
 
 The API will be available at: **http://localhost:3000**
 
+## API Documentation
+
+Once the application is running, you can access the **interactive Swagger documentation** at:
+
+**📚 http://localhost:3000/api/docs**
+
+The Swagger UI provides:
+- Complete API reference with all endpoints
+- Request/response examples
+- Try-it-out functionality for testing endpoints directly from the browser
+- Schema definitions for all DTOs
+
+Alternatively, you can import the **Postman collection** (`Product-Search-API.postman_collection.json`) to test all endpoints with pre-configured requests.
+
 ## Available Endpoints
 
 ### Create a product
@@ -260,6 +274,37 @@ docker compose logs -f
 ```bash
 docker compose down
 ```
+
+## Docker Deployment
+
+To deploy the application using Docker:
+
+**1. Build the Docker image:**
+```bash
+docker build -t product-search-api .
+```
+
+**2. Run with Docker Compose (recommended):**
+
+The provided `docker-compose.yml` includes all required services. Just add the application service:
+
+```bash
+docker compose up -d
+```
+
+**3. Or run the container standalone:**
+```bash
+docker run -p 3000:3000 \
+  -e POSTGRES_HOST=your_postgres_host \
+  -e POSTGRES_PORT=5432 \
+  -e POSTGRES_USER=your_user \
+  -e POSTGRES_PASSWORD=your_password \
+  -e POSTGRES_DB=your_db \
+  -e ELASTICSEARCH_NODE=http://your_elasticsearch:9200 \
+  product-search-api
+```
+
+**Note:** Make sure PostgreSQL, Elasticsearch, and Redis are running before starting the application.
 
 ---
 
