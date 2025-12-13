@@ -10,12 +10,18 @@ import { SearchServicePort } from "./domain/ports/search-service.port";
 import { ElasticProductAdapter } from "./infrastructure/search/elastic-product.adapter";
 import { ProductSeederService } from "./infrastructure/seeder/product.seeder.service";
 import { SearchProductsUseCase } from "./application/use-cases/search-products.use-case";
+import { AutocompleteProductUseCase } from "./application/use-cases/autocomplete-product.use-case";
+import { CacheModule } from "@nestjs/cache-manager";
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([ProductEntity]),
         ElasticsearchModule.register({
             node: process.env.ELASTICSEARCH_NODE || 'http://localhost:9200',
+        }),
+        CacheModule.register({
+            ttl: 60 * 60 * 24,
+            max: 1000,
         }),
     ],
     controllers: [ProductController],
@@ -30,7 +36,8 @@ import { SearchProductsUseCase } from "./application/use-cases/search-products.u
             useClass: ElasticProductAdapter
         },
         ProductSeederService,
-        SearchProductsUseCase
+        SearchProductsUseCase,
+        AutocompleteProductUseCase
     ],
     exports: [],
 })
