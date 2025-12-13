@@ -39,16 +39,19 @@ export class CreateProductUseCase {
             new Date(),
         );
 
-        await this.productRepository.save(newProduct);
-        this.logger.log(`Product with name: ${product.name}, created successfully`);
-
+        // Index in Elasticsearch FIRST to ensure consistency
+        // If indexing fails, we don't want to create orphaned records in PostgreSQL
         try {
             await this.searchService.indexProduct(newProduct);
-            this.logger.log(`Product with name: ${product.name}, indexed successfully`);
+            this.logger.log(`Product with name: ${product.name}, indexed in Elasticsearch successfully`);
         } catch (error) {
-            this.logger.error(`Failed to index product ${product.name}, but product was created`, error.stack);
-            // Don't throw - product was created successfully, indexing is secondary
+            this.logger.error(`Failed to index product ${product.name} in Elasticsearch`, error.stack);
+            throw new Error(`Failed to index product in search engine: ${error.message}`);
         }
+
+        // Only save to PostgreSQL if Elasticsearch indexing succeeded
+        await this.productRepository.save(newProduct);
+        this.logger.log(`Product with name: ${product.name}, created in database successfully`);
 
         return newProduct;
     }
