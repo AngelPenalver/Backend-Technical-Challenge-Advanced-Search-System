@@ -1,4 +1,30 @@
 services:
+  # NestJS Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nestjs_app
+    restart: always
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - ELASTICSEARCH_NODE=http://elasticsearch:9200
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PORT=3000
+    depends_on:
+      - postgres
+      - elasticsearch
+      - redis
+    networks:
+      - app-network
+
   # PostgreSQL
   postgres:
     image: postgres:15
@@ -12,6 +38,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
 
   # Redis
   redis:
@@ -19,6 +47,8 @@ services:
     container_name: nestjs_redis
     ports:
       - "6379:6379"
+    networks:
+      - app-network
 
   # Elasticsearch
   elasticsearch:
@@ -32,6 +62,8 @@ services:
       - "9200:9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - app-network
 
   # PGADMIN
   pgadmin:
@@ -44,7 +76,14 @@ services:
       - "5050:80"
     depends_on:
       - postgres
+    networks:
+      - app-network
 
 volumes:
   postgres_data:
   elasticsearch_data:
+
+
+networks:
+  app-network:
+    driver: bridge

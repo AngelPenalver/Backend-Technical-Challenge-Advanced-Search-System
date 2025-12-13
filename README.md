@@ -113,51 +113,50 @@ This separation makes the code:
 You need to have installed:
 
 - [Docker](https://www.docker.com/) and Docker Compose
-- [Node.js](https://nodejs.org/) (version 18 or higher)
-- [pnpm](https://pnpm.io/) - install it with: `npm install -g pnpm`
 
-### Steps to run the project
+That's it! Docker will handle everything else.
 
-**1. Clone the repository**
+### Quick Start (Recommended)
+
+**Run the entire application with a single command:**
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/AngelPenalver/Backend-Technical-Challenge-Advanced-Search-System.git
 cd Backend-Technical-Challenge-Advanced-Search-System
-```
 
-**2. Install dependencies**
-
-```bash
-pnpm install
-```
-
-**3. Configure environment variables**
-
-Copy the example file:
-
-```bash
+# 2. Copy environment file
 cp .env.example .env
+
+# 3. Start everything with Docker
+docker compose up --build
 ```
 
-Default values are already set up to work with Docker, so you don't need to change anything unless you want to.
+Wait for all services to start (approximately 30-60 seconds). The API will be available at: **http://localhost:3000**
 
-**4. Start Docker services**
-
-This starts PostgreSQL, Elasticsearch, Redis and PgAdmin:
-
+To run in detached mode (background):
 ```bash
-docker compose up -d
+docker compose up --build -d
 ```
 
-Wait a few seconds for everything to be ready. You can check with:
-
+To stop all services:
 ```bash
-docker ps
+docker compose down
 ```
 
-**5. Run the application**
+### Alternative: Local Development Setup
+
+If you prefer to run the NestJS app locally (for development):
 
 ```bash
+# 1. Install Node.js dependencies
+npm install -g pnpm
+pnpm install
+
+# 2. Start only the services (PostgreSQL, Elasticsearch, Redis)
+docker compose up postgres elasticsearch redis -d
+
+# 3. Run the app locally
 pnpm run start:dev
 ```
 
@@ -167,7 +166,7 @@ The API will be available at: **http://localhost:3000**
 
 Once the application is running, you can access the **interactive Swagger documentation** at:
 
-**📚 http://localhost:3000/api/docs**
+** http://localhost:3000/api/docs**
 
 The Swagger UI provides:
 - Complete API reference with all endpoints
