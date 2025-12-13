@@ -42,7 +42,9 @@ export class ProductSeederService implements OnModuleInit {
             price: Number(faker.finance.amount({ min: 100, max: 10000 })),
             description: faker.lorem.sentence(),
             stock: faker.number.int({ min: 0, max: 100 }),
+            location: faker.location.city(),
             category: faker.commerce.department(),
+            subcategory: faker.commerce.department(),
         }
     }
 }

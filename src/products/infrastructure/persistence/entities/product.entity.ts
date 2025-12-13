@@ -20,6 +20,12 @@ export class ProductEntity {
     @Column({ type: 'varchar', length: 255 })
     category: string;
 
+    @Column({ type: 'varchar', length: 255 })
+    location: string;
+
+    @Column({ type: 'varchar', length: 255 })
+    subcategory: string;
+
     @CreateDateColumn({ type: 'timestamp' })
     createdAt: Date;
 

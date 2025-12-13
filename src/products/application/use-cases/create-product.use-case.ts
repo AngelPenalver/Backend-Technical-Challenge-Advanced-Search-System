@@ -32,7 +32,9 @@ export class CreateProductUseCase {
             product.description,
             product.price,
             product.stock,
+            product.location,
             product.category,
+            product.subcategory,
             new Date(),
             new Date(),
         );

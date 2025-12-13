@@ -5,7 +5,9 @@ export class Product {
         public description: string,
         public price: number,
         public stock: number,
+        public location: string,
         public category: string,
+        public subcategory: string,
         public createdAt: Date,
         public updatedAt: Date,
     ) { }

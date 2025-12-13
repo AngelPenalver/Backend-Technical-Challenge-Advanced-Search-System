@@ -9,7 +9,9 @@ export class ProductMapper {
             entity.description,
             Number(entity.price),
             entity.stock,
+            entity.location,
             entity.category,
+            entity.subcategory,
             entity.createdAt,
             entity.updatedAt
         );
@@ -22,7 +24,9 @@ export class ProductMapper {
         entity.description = domain.description;
         entity.price = domain.price;
         entity.stock = domain.stock;
+        entity.location = domain.location;
         entity.category = domain.category;
+        entity.subcategory = domain.subcategory;
         return entity;
     }
 }
