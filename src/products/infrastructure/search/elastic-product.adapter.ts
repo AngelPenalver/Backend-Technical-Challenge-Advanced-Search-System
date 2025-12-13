@@ -5,9 +5,11 @@ import { SearchQuery } from "../../domain/value-objects/search-query.vo";
 import { SearchServicePort } from "../../domain/ports/search-service.port";
 import { ELASTICSEARCH_CONSTANTS } from "./elasticsearch.constants";
 import {
+    AutocompleteResult,
     ElasticsearchFilterQuery,
     ElasticsearchMustQuery,
 } from "./elasticsearch.types";
+import { Autocomplete } from "src/products/domain/value-objects/autocomplete.vo";
 
 @Injectable()
 export class ElasticProductAdapter implements SearchServicePort, OnModuleInit {
@@ -15,22 +17,32 @@ export class ElasticProductAdapter implements SearchServicePort, OnModuleInit {
 
     constructor(private readonly elasticsearchService: ElasticsearchService) { }
 
-    /**
-     * Search products in Elasticsearch
-     * @param query The search query
-     * @returns The search results
-     */
+    async autocomplete(query: Autocomplete): Promise<string[]> {
+        const { text } = query;
+        try {
+            const response = await this.elasticsearchService.search<AutocompleteResult>({
+                index: ELASTICSEARCH_CONSTANTS.PRODUCT_INDEX,
+                size: 5,
+                query: {
+                    "match_phrase_prefix": {
+                        "name": text
+                    }
+                }
+            });
+            return response.hits.hits.map(hit => hit._source!.name);
+        } catch (error) {
+            this.logger.error('Error while autocomplete:', error.stack);
+            throw error;
+        }
+    }
+
     async searchProducts(query: SearchQuery): Promise<Product[]> {
         try {
-            const { q, category, minPrice, maxPrice, offset, limit } = query;
+            const { q, category, minPrice, maxPrice, offset, limit, location, subcategory, sort, order } = query;
 
             const must: ElasticsearchMustQuery[] = [];
             const filters: ElasticsearchFilterQuery[] = [];
 
-            /**
-             * If a query is provided, add it to the must clause
-             * Otherwise, add a match_all query to the must clause
-             */
             if (q) {
                 must.push({
                     multi_match: {
@@ -40,21 +52,12 @@ export class ElasticProductAdapter implements SearchServicePort, OnModuleInit {
                     }
                 });
             } else {
-                must.push({
-                    match_all: {}
-                });
+                must.push({ match_all: {} });
             }
 
-            /**
-             * If a category is provided, add it to the filter clause
-             */
-            if (category) {
-                filters.push({
-                    term: {
-                        category: category
-                    }
-                });
-            }
+            if (category) filters.push({ term: { category: category } });
+            if (location) filters.push({ term: { location: location } });
+            if (subcategory) filters.push({ term: { subcategory: subcategory } });
 
             if (minPrice !== undefined || maxPrice !== undefined) {
                 filters.push({
@@ -67,11 +70,24 @@ export class ElasticProductAdapter implements SearchServicePort, OnModuleInit {
                 });
             }
 
+            let sortOption: any = ['_score'];
+
+            if (sort) {
+                if (sort === 'relevance') {
+                    sortOption = ['_score'];
+                } else {
+                    const sortField = sort === 'name' ? 'name.keyword' : sort;
+                    sortOption = [{ [sortField]: { order: order || 'asc' } }];
+                }
+            }
+
             this.logger.log('Searching products...');
+
             const response = await this.elasticsearchService.search<Product>({
                 index: ELASTICSEARCH_CONSTANTS.PRODUCT_INDEX,
                 from: offset,
                 size: limit,
+                sort: sortOption,
                 query: {
                     bool: {
                         must,
@@ -90,23 +106,20 @@ export class ElasticProductAdapter implements SearchServicePort, OnModuleInit {
         }
     }
 
-
-
-    /**
-     * Index a product in Elasticsearch
-     * @param product The product to index
-     */
     async indexProduct(product: Product): Promise<void> {
         try {
             await this.elasticsearchService.index({
                 index: ELASTICSEARCH_CONSTANTS.PRODUCT_INDEX,
                 id: product.id,
-                body: {
+                document: {
                     name: product.name,
                     description: product.description,
                     price: product.price,
                     stock: product.stock,
+                    location: product.location,
                     category: product.category,
+                    subcategory: product.subcategory,
+                    createdAt: product.createdAt
                 }
             });
             this.logger.log('Product indexed successfully');
@@ -117,13 +130,8 @@ export class ElasticProductAdapter implements SearchServicePort, OnModuleInit {
         }
     }
 
-
-    /**
-     * Initialize the Elasticsearch index if it doesn't exist
-     */
     async onModuleInit() {
         try {
-
             this.logger.log('Initializing Elasticsearch index...');
 
             const indexExists = await this.elasticsearchService.indices.exists({
@@ -132,15 +140,32 @@ export class ElasticProductAdapter implements SearchServicePort, OnModuleInit {
 
             if (!indexExists) {
                 this.logger.log(`Index ${ELASTICSEARCH_CONSTANTS.PRODUCT_INDEX} does not exist, creating...`);
+
                 await this.elasticsearchService.indices.create({
-                    index: ELASTICSEARCH_CONSTANTS.PRODUCT_INDEX
+                    index: ELASTICSEARCH_CONSTANTS.PRODUCT_INDEX,
+                    mappings: {
+                        properties: {
+                            name: {
+                                type: 'text',
+                                analyzer: 'standard',
+                                fields: {
+                                    keyword: { type: 'keyword' }
+                                }
+                            },
+                            description: { type: 'text' },
+                            stock: { type: 'integer' },
+                            location: { type: 'keyword' },
+                            category: { type: 'keyword' },
+                            subcategory: { type: 'keyword' },
+                            price: { type: 'float' },
+                            createdAt: { type: 'date' }
+                        }
+                    }
                 });
                 this.logger.log(`Index ${ELASTICSEARCH_CONSTANTS.PRODUCT_INDEX} created`);
             } else {
                 this.logger.log(`Index ${ELASTICSEARCH_CONSTANTS.PRODUCT_INDEX} already exists`);
             }
-
-
         } catch (error) {
             this.logger.error('Error while initializing Elasticsearch index:', error.stack);
         }
