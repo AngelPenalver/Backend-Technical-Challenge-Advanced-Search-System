@@ -26,24 +26,24 @@ The system follows a strict **Hexagonal Architecture**. The application core (Us
 
 ```mermaid
 graph TD
-    Client((Client App)) -->|HTTP Request| Controller[Controller (Infra)]
+    Client(("Client App")) -->|HTTP Request| Controller["Controller (Infra)"]
     
-    subgraph "Application Layer ( Use Cases )"
-        Controller -->|Invokes| UseCase[CreateProductUseCase]
+    subgraph "Application Layer (Use Cases)"
+        Controller -->|Invokes| UseCase["CreateProductUseCase"]
     end
     
-    subgraph "Domain Layer ( The Truth )"
-        UseCase -->|Calls| PortRepo[ProductRepositoryPort]
-        UseCase -->|Calls| PortSearch[SearchServicePort]
-        Model[Product Entity]
+    subgraph "Domain Layer (The Truth)"
+        UseCase -->|Calls| PortRepo["ProductRepositoryPort"]
+        UseCase -->|Calls| PortSearch["SearchServicePort"]
+        Model["Product Entity"]
     end
     
-    subgraph "Infrastructure Layer ( Adapters )"
-        RepoAdapter[Postgres Repository] -.->|Implements| PortRepo
-        SearchAdapter[Elastic Repository] -.->|Implements| PortSearch
+    subgraph "Infrastructure Layer (Adapters)"
+        RepoAdapter["Postgres Repository"] -.->|Implements| PortRepo
+        SearchAdapter["Elastic Repository"] -.->|Implements| PortSearch
     
-        RepoAdapter -->|SQL| DB[(PostgreSQL)]
-        SearchAdapter -->|REST| Elastic[(Elasticsearch)]
+        RepoAdapter -->|SQL| DB[("PostgreSQL")]
+        SearchAdapter -->|REST| Elastic[("Elasticsearch")]
     end
     
     classDef domain fill:#f9f,stroke:#333,stroke-width:2px;
