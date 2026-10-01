@@ -99,7 +99,7 @@ docker compose up --build -d
 pnpm install
 pnpm test
 ```
-Unit tests cover the use cases (indexing order, duplicate names, cache hits and misses) and the validation of search parameters.
+Unit tests cover the use cases (indexing order, duplicate names, cache hits and misses), the validation of search parameters and the Elasticsearch query builder (fuzzy matching, filters, price ranges, sorting and pagination).
 
 ## API Documentation
 
@@ -146,7 +146,7 @@ Uniqueness is checked with "find by name, then save" (*check-then-act*). Two con
 - **Index creation errors** at startup are only logged, and the app keeps running without a valid index.
 - **Configuration**: environment variables aren't validated at startup, and `synchronize: true` should be replaced with migrations.
 - **Error handling**: use cases throw NestJS HTTP exceptions; domain errors mapped to HTTP in the infrastructure layer would keep the core framework-agnostic.
-- **Tests**: unit tests cover the use cases and the search parameter validation. Still missing: tests for the Elasticsearch query builder and an integration test against a real Elasticsearch.
+- **Tests**: unit tests cover the use cases, the search parameter validation and the Elasticsearch query builder. Still missing: an integration test against a real Elasticsearch, to verify the mapping and relevance end to end.
 
 ---
 **Author**: Ángel Peñalver
