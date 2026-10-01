@@ -36,9 +36,9 @@ export class ElasticProductAdapter implements SearchServicePort, OnModuleInit {
         }
     }
 
-    async searchProducts(query: SearchQuery): Promise<Product[]> {
+    async searchProducts(searchQuery: SearchQuery): Promise<Product[]> {
         try {
-            const { q, category, minPrice, maxPrice, offset, limit, location, subcategory, sort, order } = query;
+            const { q, category, minPrice, maxPrice, offset, limit, location, subcategory, sort, order } = searchQuery;
 
             const must: ElasticsearchMustQuery[] = [];
             const filters: ElasticsearchFilterQuery[] = [];
@@ -97,10 +97,10 @@ export class ElasticProductAdapter implements SearchServicePort, OnModuleInit {
             });
 
             // Check if any filter parameters are provided (excluding pagination/sorting)
-            const hasFilters = !!(query.q || query.category || query.minPrice !== undefined ||
-                query.maxPrice !== undefined || query.location || query.subcategory);
+            const hasFilters = !!(searchQuery.q || searchQuery.category || searchQuery.minPrice !== undefined ||
+                searchQuery.maxPrice !== undefined || searchQuery.location || searchQuery.subcategory);
 
-            this.logger.log(`Products searched by: ${hasFilters ? JSON.stringify(query) : 'All products'}`);
+            this.logger.log(`Products searched by: ${hasFilters ? JSON.stringify(searchQuery) : 'All products'}`);
 
             return response.hits.hits.map(hit => hit._source as Product);
 
