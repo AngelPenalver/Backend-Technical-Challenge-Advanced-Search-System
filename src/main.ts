@@ -19,7 +19,7 @@ async function bootstrap() {
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('Product Search API')
-    .setDescription('Advanced search system for products with Elasticsearch, Redis caching, and filtering capabilities')
+    .setDescription('Advanced search system for products with Elasticsearch, in-memory caching, and filtering capabilities')
     .setVersion('1.0')
     .addTag('products', 'Product search and management endpoints')
     .build();

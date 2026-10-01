@@ -1,5 +1,5 @@
 {
-  "name": "backend-technical-challenge-–-advanced-search-system",
+  "name": "backend-technical-challenge-\u2013-advanced-search-system",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -79,9 +79,17 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.(t|j)s",
+      "!**/*.spec.ts",
+      "!main.ts"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1"
+    },
+    "setupFilesAfterEnv": [
+      "<rootDir>/../test/setup.ts"
+    ]
   }
 }
