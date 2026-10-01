@@ -22,7 +22,7 @@ export class ProductController {
     }
 
     @Get('search')
-    @ApiOperation({ summary: 'Search products', description: 'Advanced product search with filters, sorting, and pagination. Uses Elasticsearch for fast full-text search and Redis for caching.' })
+    @ApiOperation({ summary: 'Search products', description: 'Advanced product search with filters, sorting, and pagination. Uses Elasticsearch for full-text search and caches results in memory.' })
     @ApiResponse({ status: 200, description: 'List of products matching the search criteria' })
     @ApiResponse({ status: 400, description: 'Invalid query parameters' })
     async search(@Query() query: SearchProductDto) {
@@ -30,7 +30,7 @@ export class ProductController {
     }
 
     @Get('autocomplete')
-    @ApiOperation({ summary: 'Autocomplete product names', description: 'Get autocomplete suggestions for product names based on partial text input. Results are cached in Redis.' })
+    @ApiOperation({ summary: 'Autocomplete product names', description: 'Get autocomplete suggestions for product names based on partial text input. Results are cached in memory.' })
     @ApiResponse({ status: 200, description: 'List of product name suggestions' })
     @ApiResponse({ status: 400, description: 'Invalid query parameters' })
     async autocomplete(@Query() query: AutocompleteProductDto) {
