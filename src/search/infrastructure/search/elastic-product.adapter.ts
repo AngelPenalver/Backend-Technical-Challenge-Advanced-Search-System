@@ -9,7 +9,7 @@ import {
     ElasticsearchFilterQuery,
     ElasticsearchMustQuery,
 } from "./elasticsearch.types";
-import { Autocomplete } from "src/products/domain/value-objects/autocomplete.vo";
+import { Autocomplete } from "src/search/domain/value-objects/autocomplete.vo";
 
 @Injectable()
 export class ElasticProductAdapter implements SearchServicePort, OnModuleInit {
