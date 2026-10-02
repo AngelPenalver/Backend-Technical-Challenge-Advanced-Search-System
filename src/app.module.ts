@@ -1,8 +1,10 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ProductsModule } from './products/products.module';
-import { ProductEntity } from './products/infrastructure/persistence/entities/product.entity';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ProductModule } from './product/product.module';
+import { ProductEntity } from './product/entities/product.entity';
+import { SearchModule } from './search/search.module';
 
 @Global()
 @Module({
@@ -17,7 +19,9 @@ import { ProductEntity } from './products/infrastructure/persistence/entities/pr
     entities: [ProductEntity],
     synchronize: true,
   }),
-    ProductsModule,
+  EventEmitterModule.forRoot(),
+    ProductModule,
+    SearchModule,
   ],
 })
 export class AppModule { }

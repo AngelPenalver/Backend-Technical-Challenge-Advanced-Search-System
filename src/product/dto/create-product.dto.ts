@@ -1,10 +1,11 @@
-import { IsNotEmpty, IsNumber, IsPositive, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsPositive, IsString, MaxLength } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class CreateProductDto {
     @ApiProperty({ example: 'Gaming Laptop', description: 'Product name' })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(100)
     name: string;
 
     @ApiProperty({ example: 'Powerful laptop for gaming and video editing', description: 'Product description' })
@@ -25,15 +26,18 @@ export class CreateProductDto {
     @ApiProperty({ example: 'Electronics', description: 'Product category' })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(50)
     category: string;
 
     @ApiProperty({ example: 'New York', description: 'Product location' })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(50)
     location: string;
 
     @ApiProperty({ example: 'Computers', description: 'Product subcategory' })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(50)
     subcategory: string;
 }

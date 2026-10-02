@@ -6,7 +6,7 @@
 
 This was my submission for a backend technical challenge with a 3-day deadline. When I started, I had never used Hexagonal Architecture, Elasticsearch or Redis, so a large part of the work was learning them while building.
 
-The code is kept as delivered. After reviewing it later with more experience, I documented what I would change today in [Known limitations and what I'd improve](#known-limitations-and-what-id-improve).
+After the challenge I reviewed it with more experience. I reorganized the modules so Hexagonal Architecture is applied only where it pays off (see [Architecture](#architecture)), and documented the remaining issues in [Known limitations and what I'd improve](#known-limitations-and-what-id-improve).
 
 ## What It Does
 
@@ -21,7 +21,8 @@ The code is kept as delivered. After reviewing it later with more experience, I 
 | Component | Technology | Role |
 |-----------|------------|------|
 | **Framework** | NestJS (TypeScript) | REST API and dependency injection. |
-| **Architecture** | Hexagonal (Ports & Adapters) | Use cases depend on ports, not on infrastructure. |
+| **Architecture** | Modular; Hexagonal in `search` | Ports & adapters only where there is an external engine to isolate. |
+| **Events** | `@nestjs/event-emitter` | Decouples product creation from indexing. |
 | **Search engine** | Elasticsearch 7.17 | Full-text search, filters and autocomplete. |
 | **Database** | PostgreSQL + TypeORM | Source of truth for products. |
 | **Cache** | cache-manager (in-memory) | Caches search and autocomplete results. |
@@ -30,35 +31,36 @@ The code is kept as delivered. After reviewing it later with more experience, I 
 
 ## Architecture
 
-The application core (use cases) talks to the outside world (database, search engine) only through **ports** (abstract classes). Infrastructure adapters implement those ports, so the core does not depend on TypeORM or Elasticsearch.
+The code is split into two modules with different needs, and each one gets only the structure it needs:
+
+| Module | Responsibility | Structure |
+|--------|----------------|-----------|
+| `product` | Create products and store them in PostgreSQL, the **source of truth**. | Plain NestJS: controller, service and TypeORM repository. |
+| `search` | Full-text search, autocomplete and caching over **Elasticsearch**. | Hexagonal: use cases depend on a `SearchServicePort`; Elasticsearch is an adapter. |
+
+**Why Hexagonal only in `search`?** Creating products is a simple CRUD with no complex business rules, so ports and adapters there would add files without adding value. Search is different: it depends on an external engine with its own query language, and isolating it behind a port keeps the search logic testable without Elasticsearch and replaceable if the engine changes.
+
+**Dependency direction:** `search` depends on `product`, never the other way around. When a product is saved, `product` emits a `product.created` event; `search` listens to it and indexes the product. The product module doesn't know that search exists.
 
 ```mermaid
-graph TD
-    Client(("Client App")) -->|HTTP Request| Controller["Controller (Infra)"]
+graph LR
+    Client(("Client")) -->|POST /products| ProductController
 
-    subgraph "Application Layer (Use Cases)"
-        Controller -->|Invokes| UseCase["Create / Search / Autocomplete"]
+    subgraph product ["product module (plain NestJS)"]
+        ProductController --> ProductService
+        ProductService -->|SQL| DB[("PostgreSQL")]
     end
 
-    subgraph "Domain Layer"
-        UseCase -->|Calls| PortRepo["ProductRepositoryPort"]
-        UseCase -->|Calls| PortSearch["SearchServicePort"]
-        Model["Product Model"]
+    ProductService -.->|product.created| Listener
+
+    subgraph search ["search module (Hexagonal)"]
+        Client2(("Client")) -->|GET /products/search| SearchController
+        Listener["ProductCreatedListener"] --> UseCases["Use cases"]
+        SearchController --> UseCases
+        UseCases --> Port["SearchServicePort"]
+        Adapter["ElasticProductAdapter"] -.->|implements| Port
+        Adapter -->|REST| Elastic[("Elasticsearch")]
     end
-
-    subgraph "Infrastructure Layer (Adapters)"
-        RepoAdapter["Postgres Repository"] -.->|Implements| PortRepo
-        SearchAdapter["Elasticsearch Adapter"] -.->|Implements| PortSearch
-
-        RepoAdapter -->|SQL| DB[("PostgreSQL")]
-        SearchAdapter -->|REST| Elastic[("Elasticsearch")]
-    end
-
-    classDef domain fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef infra fill:#bbf,stroke:#333,stroke-width:2px;
-
-    class UseCase,PortRepo,PortSearch,Model domain;
-    class Controller,RepoAdapter,SearchAdapter infra;
 ```
 
 ### Search Design
@@ -72,11 +74,12 @@ graph TD
 ### Data Flow: Creating a Product
 
 1. `ProductController` receives and validates the payload.
-2. `CreateProductUseCase` checks that no product with the same name exists.
-3. The product is indexed in **Elasticsearch**.
-4. If indexing succeeds, it is saved in **PostgreSQL**.
+2. `ProductService` checks that no product with the same name exists.
+3. The product is saved in **PostgreSQL**, the source of truth.
+4. `ProductService` emits `product.created` and responds to the client.
+5. `ProductCreatedListener` (search module) indexes the product in **Elasticsearch**.
 
-> This two-step write is not atomic — see [limitation #1](#1-dual-write-between-elasticsearch-and-postgresql).
+Indexing happens after the response, so search is **eventually consistent**: a new product becomes searchable shortly after it's created. If indexing fails, the product still exists in PostgreSQL — see [limitation #1](#1-indexing-without-retries).
 
 ## Quick Start
 
@@ -99,7 +102,7 @@ docker compose up --build -d
 pnpm install
 pnpm test
 ```
-Unit tests cover the use cases (indexing order, duplicate names, cache hits and misses), the validation of search parameters and the Elasticsearch query builder (fuzzy matching, filters, price ranges, sorting and pagination).
+Unit tests cover product creation (save before emitting the event, duplicate names), the indexing listener, the search use cases (cache hits and misses), the validation of search parameters and the Elasticsearch query builder (fuzzy matching, filters, price ranges, sorting and pagination).
 
 ## API Documentation
 
@@ -108,16 +111,18 @@ Unit tests cover the use cases (indexing order, duplicate names, cache hits and 
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/products` | Create a product and index it in Elasticsearch. |
+| `POST` | `/api/products` | Create a product; it's indexed in Elasticsearch asynchronously. |
 | `GET` | `/api/products/search` | Full-text search with filters, sorting and pagination. |
 | `GET` | `/api/products/autocomplete` | Autocomplete suggestions for product names. |
 
 ## Known Limitations and What I'd Improve
 
-### 1. Dual write between Elasticsearch and PostgreSQL
-Creating a product writes to two systems without a shared transaction. Indexing in Elasticsearch first avoids products that exist in the database but can't be found. However, if the PostgreSQL write then fails, an orphan document stays in the index — and since search reads from Elasticsearch, users can see a product that doesn't exist.
+### 1. Indexing without retries
+In the original version, the product was indexed in Elasticsearch *before* saving it in PostgreSQL, so a failed database write left an orphan document that users could find. Now PostgreSQL is written first and Elasticsearch is updated from an event, so the index can never contain a product that doesn't exist.
 
-**Improvement:** treat PostgreSQL as the single source of truth. Save there first, then update Elasticsearch asynchronously with retries (for example, with the *transactional outbox* pattern), and add a job that can rebuild the whole index from the database.
+The remaining gap: the event is in-process and has no retries. If Elasticsearch is down, or the app stops between saving and indexing, the product exists in PostgreSQL but never appears in search.
+
+**Improvement:** use the *transactional outbox* pattern (store the event in the same database transaction as the product, and have a worker publish it with retries), and add a job that can rebuild the whole index from PostgreSQL.
 
 ### 2. Redis is not actually used
 Redis runs in Docker Compose and the `redis` package is installed, but the cache module has no Redis store configured, so results are cached **in the memory of each app instance**. With more than one instance, each would keep its own cache.
@@ -145,8 +150,7 @@ Uniqueness is checked with "find by name, then save" (*check-then-act*). Two con
 - **Seeding**: it runs on every application start. It should be a separate script, so multiple instances don't seed concurrently.
 - **Index creation errors** at startup are only logged, and the app keeps running without a valid index.
 - **Configuration**: environment variables aren't validated at startup, and `synchronize: true` should be replaced with migrations.
-- **Error handling**: use cases throw NestJS HTTP exceptions; domain errors mapped to HTTP in the infrastructure layer would keep the core framework-agnostic.
-- **Tests**: unit tests cover the use cases, the search parameter validation and the Elasticsearch query builder. Still missing: an integration test against a real Elasticsearch, to verify the mapping and relevance end to end.
+- **Tests**: unit tests cover product creation, the indexing listener, the search use cases, the search parameter validation and the Elasticsearch query builder. Still missing: an integration test against a real Elasticsearch, to verify the mapping and relevance end to end.
 
 ---
 **Author**: Ángel Peñalver

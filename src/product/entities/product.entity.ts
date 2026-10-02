@@ -5,7 +5,7 @@ export class ProductEntity {
     @PrimaryColumn('uuid')
     id: string;
 
-    @Column({ type: 'varchar', length: 255 })
+    @Column({ type: 'varchar', length: 100 })
     name: string;
 
     @Column({ type: 'text' })
@@ -17,13 +17,13 @@ export class ProductEntity {
     @Column({ type: 'integer' })
     stock: number;
 
-    @Column({ type: 'varchar', length: 255 })
+    @Column({ type: 'varchar', length: 50 })
     category: string;
 
-    @Column({ type: 'varchar', length: 255 })
+    @Column({ type: 'varchar', length: 50 })
     location: string;
 
-    @Column({ type: 'varchar', length: 255 })
+    @Column({ type: 'varchar', length: 50 })
     subcategory: string;
 
     @CreateDateColumn({ type: 'timestamp' })
